@@ -2,9 +2,9 @@ import sys
 from optparse import OptionParser
 from re import match
 
-samplefile = sys.argv[1]
+sample_file = sys.argv[1]
 del sys.argv[1]
-popfile = sys.argv[1]
+pop_file = sys.argv[1]
 del sys.argv[1]
 
 p = 1000
@@ -12,7 +12,7 @@ d1 = 10
 d2 = 70
 ci = 'y'
 batch = 'n'
-pathlengths = 'n'
+path_lengths = 'n'
 missing = 'n'
 
 parser = OptionParser()
@@ -39,7 +39,7 @@ else:
 if options.o:
     out = options.o
 else:
-    out = samplefile.split('.')[0]
+    out = sample_file.split('.')[0]
 
 if options.p:
     p = options.p
@@ -57,9 +57,9 @@ else:
     batch = 'n'
 
 if options.l:
-    pathlengths = options.l
+    path_lengths = options.l
 else:
-    pathlengths = 'n'
+    path_lengths = 'n'
 
 sample = {}
 population = {}
@@ -68,53 +68,52 @@ output = out + '.out'
 
 o = open(output, 'a')
 
-saveout = sys.stdout
+save_out = sys.stdout
 sys.stdout = open(output, 'w')
 
 if batch == 'y':
-    Files = []
+    files = []
 else:
-    Files = [samplefile]
+    files = [sample_file]
 
-Index = {}
-Taxon = {}
+index = {}
+taxon = {}
 coef = {}
-taxon = []
-pathLengths = {}
+path_lengths_dict = {}
 
-for i in open(samplefile):
+for line in open(sample_file):
     if batch == 'y':
-        j = i.strip()
-        Files.append(j)
+        j = line.strip()
+        files.append(j)
     else:
         break
 
 duplicates = []
 
-for i in open(popfile):
-    if match('Taxon:', i):
-        x = i.split()
+for line in open(pop_file):
+    if match('Taxon:', line):
+        x = line.split()
         x.remove('Taxon:')
         for i in x:
             taxon.append(i)
             j = x.index(i)
-            Index[i] = j + 1
+            index[i] = j + 1
         continue
 
-    elif match('Coefficients:', i):
-        x = i.split()
+    elif match('Coefficients:', line):
+        x = line.split()
         x.remove('Coefficients:')
         x = map(eval, x)
 
         for t in taxon:
             i = taxon.index(t)
             coef[t] = sum(x[i:])
-            pathLengths[t] = x[i]
+            path_lengths_dict[t] = x[i]
 
         continue
 
-    i.strip()
-    x = i.split()
+    line.strip()
+    x = line.split()
 
     species = x[0]
     population[species] = {}
@@ -128,17 +127,17 @@ for i in open(popfile):
     if missing == 'y':
         mtax = ''
         for t in taxon:
-            if x[Index[t]] == '/':
+            if x[index[t]] == '/':
                 sample[species][t] = mtax
             else:
-                sample[species][t] = x[Index[t]]
-                mtax = x[Index[t]]
+                sample[species][t] = x[index[t]]
+                mtax = x[index[t]]
 
             population[species][t] = sample[species][t]
 
     else:
         for t in taxon:
-            sample[species][t] = x[Index[t]]
+            sample[species][t] = x[index[t]]
             population[species][t] = sample[species][t]
 
 if len(duplicates) > 0:
@@ -146,24 +145,24 @@ if len(duplicates) > 0:
     for i in duplicates:
         print(i, '\n')
 
-def PathLength(population):
-    taxonN = {}
-    X = {}
+def path_length(population):
+    taxon_n = {}
+    x = {}
     for t in taxon:
-        Taxon[t] = {}
-        X[t] = [population[i][t] for i in sample]
+        taxon[t] = {}
+        x[t] = [population[i][t] for i in sample]
 
         if taxon.index(t) == 0:
-            for i in set(X[t]):
-                Taxon[t][i] = X[t].count(i)
+            for i in set(x[t]):
+                taxon[t][i] = x[t].count(i)
         else:
-            for i in set(X[t]):
-                if i not in X[taxon[taxon.index(t) - 1]]:
-                    Taxon[t][i] = X[t].count(i)
+            for i in set(x[t]):
+                if i not in x[taxon[taxon.index(t) - 1]]:
+                    taxon[t][i] = x[t].count(i)
 
-        taxonN[t] = len(Taxon[t])
+        taxon_n[t] = len(taxon[t])
 
-    n = [float(len(Taxon[t])) for t in taxon]
+    n = [float(len(taxon[t])) for t in taxon]
     n.insert(0, 1.0)
     raw = []
     for i in range(len(n) - 1):
@@ -177,126 +176,126 @@ def PathLength(population):
         raw.append(c)
 
     s = sum(raw)
-    adjco = [i * 100 / s for i in raw]
+    adj_co = [i * 100 / s for i in raw]
 
     coef = {}
-    pathLengths = {}
+    path_lengths = {}
     for i in range(len(taxon)):
         t = taxon[i]
-        coef[t] = sum(adjco[i:])
-        pathLengths[t] = adjco[i]
+        coef[t] = sum(adj_co[i:])
+        path_lengths[t] = adj_co[i]
 
-    return coef, taxonN, pathLengths
+    return coef, taxon_n, path_lengths
 
-if pathlengths == 'n':
-    coef, popN, pathLengths = PathLength(population)
-if pathlengths == 'y':
-    XXX, popN, YYY = PathLength(population)
-    del XXX, YYY
+if path_lengths == 'n':
+    coef, pop_n, path_lengths = path_length(population)
+if path_lengths == 'y':
+    xxx, pop_n, yyy = path_length(population)
+    del xxx, yyy
 
-def ATDmean(data, sample):
+def atd_mean(data, sample):
     N = len(sample)
-    Taxon = {}
-    taxonN = {}
-    AvTD = 0
+    taxon = {}
+    taxon_n = {}
+    av_td = 0
     n = 0
 
     for t in taxon:
-        Taxon[t] = {}
+        taxon[t] = {}
         x = [data[i][t] for i in sample]
         for i in set(x):
-            Taxon[t][i] = x.count(i)
+            taxon[t][i] = x.count(i)
 
     for t in taxon:
-        taxonN[t] = sum([Taxon[t][i] * Taxon[t][j] for i in Taxon[t] for j in Taxon[t] if i != j])
-        n = taxonN[t] - n
-        AvTD = AvTD + (n * coef[t])
-        n = taxonN[t]
-    AvTD /= (N * (N - 1))
+        taxon_n[t] = sum([taxon[t][i] * taxon[t][j] for i in taxon[t] for j in taxon[t] if i != j])
+        n = taxon_n[t] - n
+        av_td = av_td + (n * coef[t])
+        n = taxon_n[t]
+    av_td /= (N * (N - 1))
 
-    return AvTD, taxonN, taxon
+    return av_td, taxon_n, taxon
 
-def ATDvariance(taxonN, sample, atd):
-    vtd = 0
+def atd_variance(taxon_n, sample, atd):
+    v_td = 0
     N = 0
     n = 0
 
     for t in taxon:
-        n = taxonN[t] - n
-        vtd = vtd + n * coef[t] ** 2
-        n = taxonN[t]
+        n = taxon_n[t] - n
+        v_td = v_td + n * coef[t] ** 2
+        n = taxon_n[t]
 
     N = len(sample)
     n = N * (N - 1)
 
-    vtd = (vtd - ((atd * n) ** 2) / n) / n
+    v_td = (v_td - ((atd * n) ** 2) / n) / n
 
-    return vtd
+    return v_td
 
-def euler(data, atd, TaxonN):
+def euler(data, atd, taxon_n):
     sample = data.keys()
     n = len(sample)
-    TDmin = 0
+    td_min = 0
     N = 0
     for t in taxon:
-        k = len(Taxon[t])
-        TDmin += coef[t] * (((k - 1) * (n - k + 1) * 2 + (k - 1) * (k - 2)) - N)
+        k = len(taxon[t])
+        td_min += coef[t] * (((k - 1) * (n - k + 1) * 2 + (k - 1) * (k - 2)) - N)
         N += ((k - 1) * (n - k + 1) * 2 + (k - 1) * (k - 2)) - N
 
-    TDmin /= (n * (n - 1))
+    td_min /= (n * (n - 1))
 
     taxon.reverse()
-    TaxMax = {}
-    taxonN = {}
+    tax_max = {}
+    taxon_n = {}
     import random
     for t in taxon:
-        TaxMax[t] = []
+        tax_max[t] = []
         if taxon.index(t) == 0:
-            TaxMax[t] = []
-            for i in range(len(Taxon[t])):
-                TaxMax[t].append([])
-            for i in range(len(Taxon[t])):
-                TaxMax[t][i] = [sample[j] for j in range(i, n, len(Taxon[t]))]
-        else:
-            TaxMax[t] = []
+            tax_max[t] = []
             for i in range(len(taxon[t])):
-                TaxMax[t].append([])
+                tax_max[t].append([])
+            for i in range(len(taxon[t])):
+                tax_max[t][i] = [sample[j] for j in range(i, n, len(taxon[t]))]
+        else:
+            tax_max[t] = []
+            for i in range(len(taxon[t])):
+                tax_max[t].append([])
                 s = taxon[taxon.index(t) - 1]
-                tax = [TaxMax[s][j] for j in range(i, len(taxon[s]), len(taxon[t]))]
+                tax = [tax_max[s][j] for j in range(i, len(taxon[s]), len(taxon[t]))]
 
                 for j in tax:
-                    TaxMax[t][i] += j
-        TaxMax[t].reverse()
+                    tax_max[t][i] += j
+        tax_max[t].reverse()
 
     taxon.reverse()
     td_max = 0
     n = 0
     N = len(sample)
     for t in taxon:
-        taxonN[t] = sum([len(TaxMax[t][i]) * len(TaxMax[t][j]) for i in range(len(TaxMax[t])) for j in range(len(TaxMax[t])) if i != j])
-        n = taxonN[t] - n
-        TDmax += n * coef[t]
-        n = taxonN[t]
+        taxon_n[t] = sum([len(tax_max[t][i]) * len(tax_max[t][j]) for i in range(len(tax_max[t])) for j in range(len(tax_max[t])) if i != j])
+        n = taxon_n[t] - n
+        td_max += n * coef[t]
+        n = taxon_n[t]
 
-    TDmax /= (N * (N - 1))
+    td_max /= (N * (N - 1))
 
-    EI = (TDmax - atd) / (TDmax - TDmin)
+    ei = (td_max - atd) / (td_max - td_min)
 
-    Eresults = {'EI': EI, 'TDmin': TDmin, 'TDmax': TDmax}
-    return Eresults
+    e_results = {'EI': ei, 'TDmin': td_min, 'TDmax': td_max}
+    return e_results
 
 print("Output from Average Taxonomic Distinctness\n")
 
-def Sample(samplefile):
+def sample(sample_file):
     sample = {}
-    print(samplefile)
-    for line in open(samplefile):
-        if match('Taxon:', i):
+    print(sample_file)
+    for line in open(sample_file):
+        if match('Taxon:', line):
             continue
-        elif match('Coefficients:', i):
+        elif match('Coefficients:', line):
             continue
 
-        x = i.split()
+        x = line.split()
         species = x[0]
         sample[species] = population[species]
 
@@ -304,34 +303,34 @@ def Sample(samplefile):
 
 results = {}
 
-for f in Files:
-    sample = Sample(f)
+for f in files:
+    sample_data = sample(f)
     f = f.split('.')
     f = f[0]
 
     results[f] = {}
 
-    samp = sample.keys()
+    samp = sample_data.keys()
 
-    atd, taxonN, taxon = ATDmean(sample, samp)
-    vtd = ATDvariance(taxonN, samp, atd)
-    Eresults = euler(sample, atd, taxonN)
+    atd, taxon_n, taxon = atd_mean(sample_data, samp)
+    v_td = atd_variance(taxon_n, samp, atd)
+    e_results = euler(sample_data, atd, taxon_n)
 
     results[f]['atd'] = atd
-    results[f]['vtd'] = vtd
-    results[f]['euler'] = Eresults
-    results[f]['N'] = taxonN
-    results[f]['n'] = len(sample)
-    results[f]['taxon'] = Taxon
+    results[f]['vtd'] = v_td
+    results[f]['euler'] = e_results
+    results[f]['N'] = taxon_n
+    results[f]['n'] = len(sample_data)
+    results[f]['taxon'] = taxon
 
 N = len(sample.keys())
 
-def printResults():
+def print_results():
     print("Number of taxa and path lengths for each taxonomic level:")
 
     for t in taxon:
-        print('%-10s\t%d\t%.4f' % (t, popN[t], pathLengths[t]))
-        n = taxonN[t]
+        print('%-10s\t%d\t%.4f' % (t, pop_n[t], path_lengths_dict[t]))
+        n = taxon_n[t]
 
     print("\n")
 
@@ -358,28 +357,28 @@ at each level excluding comparisons that differ at upper levels""")
         print("von Euler's index of imbalance      = %.4f" % results[f]['euler']['EI'])
         print('\n')
 
-print(Results())
+print_results()
 print("---------------------------------------------------")
 
-sys.stdout = saveout
+sys.stdout = save_out
 sys.stdout = sys.__stdout__
 
 if ci == 'y':
     output = out.split('_')[0] + '_funnel.out'
     o = open(output, 'a')
 
-    saveout = sys.stdout
+    save_out = sys.stdout
     sys.stdout = open(output, 'w')
     print("""Confidence limits for average taxonomic distinctness and variation in taxonomic distinctness
 limits are lower 95% limit for AvTD and upper 95% limit for VarTD
 """)
     print("Number of permutations for confidence limits =", p, '\n')
 
-    ciarray = []
+    ci_array = []
     x = []
-    carray = []
+    c_array = []
 
-    def Funnel(p, d1, d2):
+    def funnel(p, d1, d2):
         from random import sample
         pop = population.keys()
 
@@ -391,29 +390,29 @@ limits are lower 95% limit for AvTD and upper 95% limit for VarTD
         print("dimension AvTD05%   AvTDmean  AvTD95%   AvTDup    VarTDlow   VarTD05%   VarTDmean  VarTD95%")
         for d in range(d1, d2 + 1):
             x.append(d)
-            AvTDci = []
-            VarTDci = []
+            av_td_ci = []
+            var_td_ci = []
             for j in range(p):
                 rsamp = sample(pop, d)
 
-                atd, taxonN, taxon = ATDmean(population, rsamp)
-                AvTDci.append(atd)
-                vtd = ATDvariance(taxonN, rsamp, atd)
-                AvTDci.append(vtd)
+                atd, taxon_n, taxon = atd_mean(population, rsamp)
+                av_td_ci.append(atd)
+                v_td = atd_variance(taxon_n, rsamp, atd)
+                var_td_ci.append(v_td)
 
-            AvTDci.sort()
-            VarTDci.sort()
+            av_td_ci.sort()
+            var_td_ci.sort()
 
-            av_td = AvTDci[int(.05 * p)], sum(AvTDci) / p, AvTDci[int(.95 * p)], max(AvTDci)
-            var_td = min(VarTDci), VarTDci[int(.05 * p)], sum(VarTDci) / p, VarTDci[int(.95 * p)]
+            av_td = av_td_ci[int(.05 * p)], sum(av_td_ci) / p, av_td_ci[int(.95 * p)], max(av_td_ci)
+            var_td = min(var_td_ci), var_td_ci[int(.05 * p)], sum(var_td_ci) / p, var_td_ci[int(.95 * p)]
 
             dims.append(d)
-            ciarray.append(av_td[0])
-            carray.append(av_td[1])
+            ci_array.append(av_td[0])
+            c_array.append(av_td[1])
             print('%i        %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f' %
                   (d, av_td[0], av_td[1], av_td[2], av_td[3], var_td[0], var_td[1], var_td[2], var_td[3]))
 
-    Funnel(p, d1, d2)
+    funnel(p, d1, d2)
 
-    sys.stdout = saveout
+    sys.stdout = save_out
     sys.stdout = sys.__stdout__
