@@ -7,7 +7,7 @@ popfile = sys.argv[1];      del sys.argv[1]
 
 p = 1000; d1 = 10; d2 = 70; ci = 'y'; b = 'n'; l = 'n'
 batch = b; pathlengths = l; missing = 'n'
-#parameter = 'm'; 
+
 
 
 parser = OptionParser()
@@ -85,7 +85,6 @@ for i in open(popfile):
     if match('Taxon:', i):
         x = i.split()
         x.remove('Taxon:')
-        #x = [string.lower() for string in x]  
 
         for i in x:
             taxon.append(i)
@@ -133,7 +132,7 @@ for i in open(popfile):
             sample[species][t] = x[Index[t]]
 	    population[species][t] = sample[species][t]
 if len(duplicates) > 0:
-    print "Population master list contains duplicates:"
+    print ("Population master list contains duplicates:")
     for i in duplicates: print i,'\n'
 
 def PathLength(population):
@@ -274,12 +273,10 @@ def euler(data, atd, TaxonN):
 
     Eresults = {'EI':EI, 'TDmin':TDmin,'TDmax':TDmax}
     return Eresults
-    #print TDmax
-
-print "Output from Average Taxonomic Distinctness\n"
+print ("Output from Average Taxonomic Distinctness\n")
 def Sample(samplefile):
     sample = {}
-    print samplefile
+    print (samplefile)
     for i in open(samplefile):
         if match('Taxon:', i): continue
         elif match('Coefficients:', i): continue
@@ -318,41 +315,41 @@ for f in Files:
 N = len(sample.keys())
 
 def printResults():    
-    print "Number of taxa and path lengths for each taxonomic level:"
+    print ("Number of taxa and path lengths for each taxonomic level:")
 
     for t in taxon:
-        print '%-10s\t%d\t%.4f' %(t,popN[t],pathLengths[t])
+        print ('%-10s\t%d\t%.4f' %(t,popN[t],pathLengths[t]))
         n = taxonN[t]
 
-    print "\n",
+    print ("\n",)
 
     for f in results:
-        print "---------------------------------------------------"
-        print "Results for sample: ", f,'\n'
-        print "Dimension for this sample is", results[f]['n'], '\n\n',
-        print "Number of taxa and pairwise comparisons  at each taxon level:"
+        print( "---------------------------------------------------")
+        print ("Results for sample: ", f,'\n')
+        print ("Dimension for this sample is", results[f]['n'], '\n\n',)
+        print ("Number of taxa and pairwise comparisons  at each taxon level:")
             
         n = 0
         for t in taxon:
             
             N = results[f]['N'][t] - n
-            print '%-10s\t%i\t%i' %(t,len(results[f]['taxon'][t]),N)
+            print ('%-10s\t%i\t%i' %(t,len(results[f]['taxon'][t]),N))
             n = results[f]['N'][t]
 
-        print """\nNumber of pairwise comparisons is for pairs that differ \
-at each level excluding comparisons that differ at upper levels"""
-        print "\n", 
+        print( """\nNumber of pairwise comparisons is for pairs that differ \
+at each level excluding comparisons that differ at upper levels""")
+        print( "\n",) 
           
-        print "Average taxonomic distinctness      = %.4f" % results[f]['atd']
-        print "Variation in taxonomic distinctness = %.4f" % results[f]['vtd']
-        print "Minimum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmin']
-        print "Maximum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmax']
-        print "von Euler's index of imbalance      = %.4f" % results[f]['euler']['EI']
-        print '\n',
+        print ("Average taxonomic distinctness      = %.4f" % results[f]['atd'])
+        print ("Variation in taxonomic distinctness = %.4f" % results[f]['vtd'])
+        print ("Minimum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmin'])
+        print ("Maximum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmax'])
+        print ("von Euler's index of imbalance      = %.4f" % results[f]['euler']['EI'])
+        print ('\n',)
 
 
-printResults()
-print "---------------------------------------------------"
+print(Results())
+print ("---------------------------------------------------")
 
 sys.stdout = saveout
     
@@ -366,10 +363,10 @@ if ci == 'y':
     
     saveout = sys.stdout
     sys.stdout = open(output, 'w')
-    print """Confidence limits for average taxonomic distinctness and variation in taxonomic distinctness
+    print( """Confidence limits for average taxonomic distinctness and variation in taxonomic distinctness
 limits are lower 95% limit for AvTD and upper 95% limit for VarTD
-"""
-    print "Number of permutations for confidence limits =", p, '\n'
+""")
+    print( "Number of permutations for confidence limits =", p, '\n')
 
     ciarray = []; x = [];carray = []
     def Funnel(p,d1,d2):
@@ -378,7 +375,7 @@ limits are lower 95% limit for AvTD and upper 95% limit for VarTD
     
         dims = []; up = []; lo = []; means = []
 
-        print "dimension AvTD05%   AvTDmean  AvTD95%   AvTDup    VarTDlow   VarTD05%   VarTDmean  VarTD95%"
+        print ("dimension AvTD05%   AvTDmean  AvTD95%   AvTDup    VarTDlow   VarTD05%   VarTDmean  VarTD95%")
         for d in range(d1, d2 + 1):
             x.append(d)
             AvTDci = []; VarTDci = []
@@ -397,8 +394,8 @@ limits are lower 95% limit for AvTD and upper 95% limit for VarTD
             dims.append(d)
             ciarray.append(AvTD[0])
             carray.append(AvTD[1])
-            print '%i        %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f' \
-                %(d, AvTD[0], AvTD[1], AvTD[2], AvTD[3], VarTD[0], VarTD[1], VarTD[2], VarTD[3])
+            print ('%i        %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f' \
+                %(d, AvTD[0], AvTD[1], AvTD[2], AvTD[3], VarTD[0], VarTD[1], VarTD[2], VarTD[3]))
             
     Funnel(p,d1,d2)
 
