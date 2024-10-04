@@ -1,4 +1,6 @@
 import sys
+from optparse import OptionParser
+from re import match
 
 samplefile = sys.argv[1];      del sys.argv[1]
 popfile = sys.argv[1];      del sys.argv[1]
@@ -7,7 +9,7 @@ p = 1000; d1 = 10; d2 = 70; ci = 'y'; b = 'n'; l = 'n'
 batch = b; pathlengths = l; missing = 'n'
 #parameter = 'm'; 
 
-from optparse import OptionParser
+
 parser = OptionParser()
 
 d1= int(sys.argv[1]);      del sys.argv[1]
@@ -59,7 +61,6 @@ o = open(output,'a')
 saveout = sys.stdout
 sys.stdout = open(output, 'w')
 
-from re import *
 
 #def Taxon():
 if batch == 'y':
