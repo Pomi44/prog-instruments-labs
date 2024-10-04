@@ -1,19 +1,21 @@
 import sys
 from optparse import OptionParser
 from re import match
+from random import sample
+
 
 sample_file = sys.argv[1]
 del sys.argv[1]
 pop_file = sys.argv[1]
 del sys.argv[1]
 
-p = 1000
-d1 = 10
-d2 = 70
-ci = 'y'
-batch = 'n'
-path_lengths = 'n'
-missing = 'n'
+p: int = 1000
+d1: int = 10
+d2: int = 70
+ci: str = 'y'
+batch: str = 'n'
+path_lengths: str = 'n'
+missing: str = 'n'
 
 parser = OptionParser()
 
@@ -31,40 +33,16 @@ parser.add_option('-m')
 
 (options, args) = parser.parse_args()
 
-if options.m:
-    missing = options.m
-else:
-    missing = 'n'
-
-if options.o:
-    out = options.o
-else:
-    out = sample_file.split('.')[0]
-
-if options.p:
-    p = options.p
-else:
-    p = 1000
-
-if options.c:
-    ci = options.c
-else:
-    ci = 'y'
-
-if options.b:
-    batch = options.b
-else:
-    batch = 'n'
-
-if options.l:
-    path_lengths = options.l
-else:
-    path_lengths = 'n'
+missing = options.m if options.m else 'n'
+out = options.o if options.o else sample_file.split('.')[0]
+p = options.p if options.p else 1000
+ci = options.c if options.c else 'y'
+batch = options.b if options.b else 'n'
+path_lengths = options.l if options.l else 'n'
 
 sample = {}
 population = {}
-
-output = out + '.out'
+output: str = out + '.out'
 
 o = open(output, 'a')
 
@@ -193,7 +171,8 @@ if path_lengths == 'y':
     xxx, pop_n, yyy = path_length(population)
     del xxx, yyy
 
-def atd_mean(data, sample):
+def atd_mean(data: dict, sample: list) -> tuple:
+    """Calculates the average taxonomic distinctness."""
     N = len(sample)
     taxon = {}
     taxon_n = {}
@@ -209,20 +188,21 @@ def atd_mean(data, sample):
     for t in taxon:
         taxon_n[t] = sum([taxon[t][i] * taxon[t][j] for i in taxon[t] for j in taxon[t] if i != j])
         n = taxon_n[t] - n
-        av_td = av_td + (n * coef[t])
+        av_td += n * coef[t]
         n = taxon_n[t]
     av_td /= (N * (N - 1))
 
     return av_td, taxon_n, taxon
 
-def atd_variance(taxon_n, sample, atd):
+def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
+    """Calculates the variance of taxonomic distinctness."""
     v_td = 0
     N = 0
     n = 0
 
     for t in taxon:
         n = taxon_n[t] - n
-        v_td = v_td + n * coef[t] ** 2
+        v_td += n * coef[t] ** 2
         n = taxon_n[t]
 
     N = len(sample)
@@ -232,7 +212,8 @@ def atd_variance(taxon_n, sample, atd):
 
     return v_td
 
-def euler(data, atd, taxon_n):
+def euler(data: dict, atd: float, taxon_n: dict) -> dict:
+    """Calculates Euler index for the data."""
     sample = data.keys()
     n = len(sample)
     td_min = 0
@@ -247,7 +228,7 @@ def euler(data, atd, taxon_n):
     taxon.reverse()
     tax_max = {}
     taxon_n = {}
-    import random
+    
     for t in taxon:
         tax_max[t] = []
         if taxon.index(t) == 0:
@@ -286,9 +267,9 @@ def euler(data, atd, taxon_n):
 
 print("Output from Average Taxonomic Distinctness\n")
 
-def sample(sample_file):
+def sample(sample_file: str) -> dict:
+    """Loads samples from a file. """
     sample = {}
-    print(sample_file)
     for line in open(sample_file):
         if match('Taxon:', line):
             continue
@@ -325,12 +306,13 @@ for f in files:
 
 N = len(sample.keys())
 
-def print_results():
+def print_results() -> None:
+    """Prints the analysis results to the screen."""
     print("Number of taxa and path lengths for each taxonomic level:")
 
     for t in taxon:
         print('%-10s\t%d\t%.4f' % (t, pop_n[t], path_lengths_dict[t]))
-        n = taxon_n[t]
+        n = 0
 
     print("\n")
 
@@ -378,8 +360,8 @@ limits are lower 95% limit for AvTD and upper 95% limit for VarTD
     x = []
     c_array = []
 
-    def funnel(p, d1, d2):
-        from random import sample
+    def funnel(p: int, d1: int, d2: int) -> None:
+        """Calculates confidence intervals for taxonomic distinctness."""
         pop = population.keys()
 
         dims = []
