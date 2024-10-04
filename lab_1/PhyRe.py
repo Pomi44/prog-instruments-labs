@@ -40,7 +40,6 @@ ci = options.c if options.c else 'y'
 batch = options.b if options.b else 'n'
 path_lengths = options.l if options.l else 'n'
 
-sample = {}
 population = {}
 output: str = out + '.out'
 
@@ -123,6 +122,7 @@ if len(duplicates) > 0:
     for i in duplicates:
         print(i, '\n')
 
+
 def path_length(population):
     taxon_n = {}
     x = {}
@@ -165,11 +165,13 @@ def path_length(population):
 
     return coef, taxon_n, path_lengths
 
+
 if path_lengths == 'n':
     coef, pop_n, path_lengths = path_length(population)
 if path_lengths == 'y':
     xxx, pop_n, yyy = path_length(population)
     del xxx, yyy
+
 
 def atd_mean(data: dict, sample: list) -> tuple:
     """Calculates the average taxonomic distinctness."""
@@ -186,13 +188,14 @@ def atd_mean(data: dict, sample: list) -> tuple:
             taxon[t][i] = x.count(i)
 
     for t in taxon:
-        taxon_n[t] = sum([taxon[t][i] * taxon[t][j] for i in taxon[t] for j in taxon[t] if i != j])
+        taxon_n[t] = sum([taxon[t][i] * taxon[t][j]
+                          for i in taxon[t] for j in taxon[t] if i != j])
         n = taxon_n[t] - n
         av_td += n * coef[t]
         n = taxon_n[t]
     av_td /= (N * (N - 1))
-
     return av_td, taxon_n, taxon
+
 
 def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
     """Calculates the variance of taxonomic distinctness."""
@@ -207,10 +210,10 @@ def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
 
     N = len(sample)
     n = N * (N - 1)
-
     v_td = (v_td - ((atd * n) ** 2) / n) / n
 
     return v_td
+
 
 def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     """Calculates Euler index for the data."""
@@ -220,15 +223,15 @@ def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     N = 0
     for t in taxon:
         k = len(taxon[t])
-        td_min += coef[t] * (((k - 1) * (n - k + 1) * 2 + (k - 1) * (k - 2)) - N)
+        td_min += coef[t] * (((k - 1) * (n - k + 1) * 2 +
+                              (k - 1) * (k - 2)) - N)
         N += ((k - 1) * (n - k + 1) * 2 + (k - 1) * (k - 2)) - N
-
     td_min /= (n * (n - 1))
 
     taxon.reverse()
     tax_max = {}
     taxon_n = {}
-    
+
     for t in taxon:
         tax_max[t] = []
         if taxon.index(t) == 0:
@@ -242,7 +245,8 @@ def euler(data: dict, atd: float, taxon_n: dict) -> dict:
             for i in range(len(taxon[t])):
                 tax_max[t].append([])
                 s = taxon[taxon.index(t) - 1]
-                tax = [tax_max[s][j] for j in range(i, len(taxon[s]), len(taxon[t]))]
+                tax = [tax_max[s][j] for j in range(i, len(taxon[s]),
+                                                    len(taxon[t]))]
 
                 for j in tax:
                     tax_max[t][i] += j
@@ -253,7 +257,9 @@ def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     n = 0
     N = len(sample)
     for t in taxon:
-        taxon_n[t] = sum([len(tax_max[t][i]) * len(tax_max[t][j]) for i in range(len(tax_max[t])) for j in range(len(tax_max[t])) if i != j])
+        taxon_n[t] = sum([len(tax_max[t][i]) * len(tax_max[t][j])
+                          for i in range(len(tax_max[t]))
+                          for j in range(len(tax_max[t])) if i != j])
         n = taxon_n[t] - n
         td_max += n * coef[t]
         n = taxon_n[t]
@@ -265,7 +271,9 @@ def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     e_results = {'EI': ei, 'TDmin': td_min, 'TDmax': td_max}
     return e_results
 
+
 print("Output from Average Taxonomic Distinctness\n")
+
 
 def sample(sample_file: str) -> dict:
     """Loads samples from a file. """
@@ -281,6 +289,7 @@ def sample(sample_file: str) -> dict:
         sample[species] = population[species]
 
     return sample
+
 
 results = {}
 
@@ -305,6 +314,7 @@ for f in files:
     results[f]['taxon'] = taxon
 
 N = len(sample.keys())
+
 
 def print_results() -> None:
     """Prints the analysis results to the screen."""
@@ -332,12 +342,18 @@ def print_results() -> None:
 at each level excluding comparisons that differ at upper levels""")
         print("\n")
 
-        print("Average taxonomic distinctness      = %.4f" % results[f]['atd'])
-        print("Variation in taxonomic distinctness = %.4f" % results[f]['vtd'])
-        print("Minimum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmin'])
-        print("Maximum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmax'])
-        print("von Euler's index of imbalance      = %.4f" % results[f]['euler']['EI'])
+        print("Average taxonomic distinctness      = %.4f" %
+              results[f]['atd'])
+        print("Variation in taxonomic distinctness = %.4f" %
+              results[f]['vtd'])
+        print("Minimum taxonomic distinctness      = %.4f" %
+              results[f]['euler']['TDmin'])
+        print("Maximum taxonomic distinctness      = %.4f" %
+              results[f]['euler']['TDmax'])
+        print("von Euler's index of imbalance      = %.4f" %
+              results[f]['euler']['EI'])
         print('\n')
+
 
 print_results()
 print("---------------------------------------------------")
@@ -351,9 +367,9 @@ if ci == 'y':
 
     save_out = sys.stdout
     sys.stdout = open(output, 'w')
-    print("""Confidence limits for average taxonomic distinctness and variation in taxonomic distinctness
-limits are lower 95% limit for AvTD and upper 95% limit for VarTD
-""")
+    print("""Confidence limits for average taxonomic distinctness
+          and variation in taxonomic distinctness
+          limits are lower 95% limit for AvTD and upper 95% limit for VarTD""")
     print("Number of permutations for confidence limits =", p, '\n')
 
     ci_array = []
@@ -365,11 +381,9 @@ limits are lower 95% limit for AvTD and upper 95% limit for VarTD
         pop = population.keys()
 
         dims = []
-        up = []
-        lo = []
-        means = []
 
-        print("dimension AvTD05%   AvTDmean  AvTD95%   AvTDup    VarTDlow   VarTD05%   VarTDmean  VarTD95%")
+        print("""dimension AvTD05% AvTDmean
+              AvTD95% AvTDup VarTDlow VarTD05% VarTDmean VarTD95%""")
         for d in range(d1, d2 + 1):
             x.append(d)
             av_td_ci = []
@@ -385,14 +399,17 @@ limits are lower 95% limit for AvTD and upper 95% limit for VarTD
             av_td_ci.sort()
             var_td_ci.sort()
 
-            av_td = av_td_ci[int(.05 * p)], sum(av_td_ci) / p, av_td_ci[int(.95 * p)], max(av_td_ci)
-            var_td = min(var_td_ci), var_td_ci[int(.05 * p)], sum(var_td_ci) / p, var_td_ci[int(.95 * p)]
+            av_td = av_td_ci[int(.05 * p)], sum(av_td_ci) / p,
+            av_td_ci[int(.95 * p)], max(av_td_ci)
+            var_td = min(var_td_ci), var_td_ci[int(.05 * p)],
+            sum(var_td_ci) / p, var_td_ci[int(.95 * p)]
 
             dims.append(d)
             ci_array.append(av_td[0])
             c_array.append(av_td[1])
-            print('%i        %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f   %6.4f' %
-                  (d, av_td[0], av_td[1], av_td[2], av_td[3], var_td[0], var_td[1], var_td[2], var_td[3]))
+            print("%i %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f" %
+                  (d, av_td[0], av_td[1], av_td[2],
+                   av_td[3], var_td[0], var_td[1], var_td[2], var_td[3]))
 
     funnel(p, d1, d2)
 
