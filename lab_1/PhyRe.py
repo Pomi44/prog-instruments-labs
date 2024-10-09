@@ -3,127 +3,124 @@ from optparse import OptionParser
 from re import match
 from random import sample
 
+def initialize_parameters():
+    """Initializing parameters from the command line."""
+    parser = OptionParser()
+    parser.add_option('-o')
+    parser.add_option('-p', type='int')
+    parser.add_option('-c')
+    parser.add_option('-b')
+    parser.add_option('-l')
+    parser.add_option('-m')
 
-sample_file = sys.argv[1]
-del sys.argv[1]
-pop_file = sys.argv[1]
-del sys.argv[1]
+    d1 = int(sys.argv[1])
+    del sys.argv[1]
+    d2 = int(sys.argv[1])
+    del sys.argv[1]
 
-p: int = 1000
-d1: int = 10
-d2: int = 70
-ci: str = 'y'
-batch: str = 'n'
-path_lengths: str = 'n'
-missing: str = 'n'
+    (options, args) = parser.parse_args()
+    out = options.o if options.o else sample_file.split('.')[0]
+    p = options.p if options.p else 1000
+    ci = options.c if options.c else 'y'
+    batch = options.b if options.b else 'n'
+    path_lengths = options.l if options.l else 'n'
+    missing = options.m if options.m else 'n'
 
-parser = OptionParser()
+    return sample_file, pop_file, p, d1, d2, ci, batch, path_lengths, missing, out
 
-d1 = int(sys.argv[1])
-del sys.argv[1]
-d2 = int(sys.argv[1])
-del sys.argv[1]
+def read_population_file(pop_file, sample, missing, batch, sample_file):
+    """Reading the population file and returning the data."""
+    population = {}
+    taxon = []
+    coef = {}
+    path_lengths_dict = {}
+    index = {}
 
-parser.add_option('-o')
-parser.add_option('-p', type='int')
-parser.add_option('-c')
-parser.add_option('-b')
-parser.add_option('-l')
-parser.add_option('-m')
+    output = sample_file.split('.')[0] + '.out'
+    with open(output, 'a') as o:
+        save_out = sys.stdout
+        sys.stdout = o  
 
-(options, args) = parser.parse_args()
+        files = []
+        if batch == 'y':
+            with open(sample_file) as sf:
+                for line in sf:
+                    files.append(line.strip())
+        else:
+            files = [sample_file]
 
-missing = options.m if options.m else 'n'
-out = options.o if options.o else sample_file.split('.')[0]
-p = options.p if options.p else 1000
-ci = options.c if options.c else 'y'
-batch = options.b if options.b else 'n'
-path_lengths = options.l if options.l else 'n'
+        duplicates = []
 
-population = {}
-output: str = out + '.out'
+        with open(pop_file) as pf:
+            for line in pf:
+                line = line.strip()
+                
+                if match('Taxon:', line):
+                    x = line.split()
+                    x.remove('Taxon:')
+                    for i in x:
+                        taxon.append(i)
+                        index[i] = x.index(i) + 1
+                    continue
 
-o = open(output, 'a')
+                elif match('Coefficients:', line):
+                    x = line.split()
+                    x.remove('Coefficients:')
+                    x = list(map(eval, x))
 
-save_out = sys.stdout
-sys.stdout = open(output, 'w')
+                    for t in taxon:
+                        i = taxon.index(t)
+                        coef[t] = sum(x[i:])
+                        path_lengths_dict[t] = x[i]
+                    continue
 
-if batch == 'y':
-    files = []
-else:
-    files = [sample_file]
+                x = line.split()
+                species = x[0]
+                population[species] = {}
 
-index = {}
-taxon = {}
-coef = {}
-path_lengths_dict = {}
+                if species in sample.keys():
+                    duplicates.append(species)
+                else:
+                    sample[species] = {}
+                    population[species] = {}
 
-for line in open(sample_file):
-    if batch == 'y':
-        j = line.strip()
-        files.append(j)
-    else:
-        break
+                if missing == 'y':
+                    mtax = ''
+                    for t in taxon:
+                        if x[index[t]] == '/':
+                            sample[species][t] = mtax
+                        else:
+                            sample[species][t] = x[index[t]]
+                            mtax = x[index[t]]
 
-duplicates = []
+                        population[species][t] = sample[species][t]
+                else:
+                    for t in taxon:
+                        sample[species][t] = x[index[t]]
+                        population[species][t] = sample[species][t]
 
-for line in open(pop_file):
-    if match('Taxon:', line):
+        if duplicates:
+            print("Population master list contains duplicates:")
+            for i in duplicates:
+                print(i)
+
+    sys.stdout = save_out
+
+    return population, taxon, coef, path_lengths_dict
+
+def read_sample_file(sample_file):
+    """Reading the selection file and returning the data."""
+    sample = {}
+    for line in open(sample_file):
+        if match('Taxon:', line) or match('Coefficients:', line):
+            continue
         x = line.split()
-        x.remove('Taxon:')
-        for i in x:
-            taxon.append(i)
-            j = x.index(i)
-            index[i] = j + 1
-        continue
-
-    elif match('Coefficients:', line):
-        x = line.split()
-        x.remove('Coefficients:')
-        x = map(eval, x)
-
-        for t in taxon:
-            i = taxon.index(t)
-            coef[t] = sum(x[i:])
-            path_lengths_dict[t] = x[i]
-
-        continue
-
-    line.strip()
-    x = line.split()
-
-    species = x[0]
-    population[species] = {}
-
-    if species in sample.keys():
-        duplicates.append(species)
-    else:
+        species = x[0]
         sample[species] = {}
-        population[species] = {}
-
-    if missing == 'y':
-        mtax = ''
-        for t in taxon:
-            if x[index[t]] == '/':
-                sample[species][t] = mtax
-            else:
-                sample[species][t] = x[index[t]]
-                mtax = x[index[t]]
-
-            population[species][t] = sample[species][t]
-
-    else:
-        for t in taxon:
-            sample[species][t] = x[index[t]]
-            population[species][t] = sample[species][t]
-
-if len(duplicates) > 0:
-    print("Population master list contains duplicates:")
-    for i in duplicates:
-        print(i, '\n')
-
+    return sample
 
 def path_length(population):
+    """Calculation of the path length."""
     taxon_n = {}
     x = {}
     for t in taxon:
@@ -165,14 +162,6 @@ def path_length(population):
 
     return coef, taxon_n, path_lengths
 
-
-if path_lengths == 'n':
-    coef, pop_n, path_lengths = path_length(population)
-if path_lengths == 'y':
-    xxx, pop_n, yyy = path_length(population)
-    del xxx, yyy
-
-
 def atd_mean(data: dict, sample: list) -> tuple:
     """Calculates the average taxonomic distinctness."""
     N = len(sample)
@@ -196,7 +185,6 @@ def atd_mean(data: dict, sample: list) -> tuple:
     av_td /= (N * (N - 1))
     return av_td, taxon_n, taxon
 
-
 def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
     """Calculates the variance of taxonomic distinctness."""
     v_td = 0
@@ -213,7 +201,6 @@ def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
     v_td = (v_td - ((atd * n) ** 2) / n) / n
 
     return v_td
-
 
 def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     """Calculates Euler index for the data."""
@@ -271,58 +258,12 @@ def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     e_results = {'EI': ei, 'TDmin': td_min, 'TDmax': td_max}
     return e_results
 
-
-print("Output from Average Taxonomic Distinctness\n")
-
-
-def sample(sample_file: str) -> dict:
-    """Loads samples from a file. """
-    sample = {}
-    for line in open(sample_file):
-        if match('Taxon:', line):
-            continue
-        elif match('Coefficients:', line):
-            continue
-
-        x = line.split()
-        species = x[0]
-        sample[species] = population[species]
-
-    return sample
-
-
-results = {}
-
-for f in files:
-    sample_data = sample(f)
-    f = f.split('.')
-    f = f[0]
-
-    results[f] = {}
-
-    samp = sample_data.keys()
-
-    atd, taxon_n, taxon = atd_mean(sample_data, samp)
-    v_td = atd_variance(taxon_n, samp, atd)
-    e_results = euler(sample_data, atd, taxon_n)
-
-    results[f]['atd'] = atd
-    results[f]['vtd'] = v_td
-    results[f]['euler'] = e_results
-    results[f]['N'] = taxon_n
-    results[f]['n'] = len(sample_data)
-    results[f]['taxon'] = taxon
-
-N = len(sample.keys())
-
-
-def print_results() -> None:
+def print_results(results, pop_n, path_lengths_dict) -> None:
     """Prints the analysis results to the screen."""
     print("Number of taxa and path lengths for each taxonomic level:")
 
     for t in taxon:
         print('%-10s\t%d\t%.4f' % (t, pop_n[t], path_lengths_dict[t]))
-        n = 0
 
     print("\n")
 
@@ -338,80 +279,9 @@ def print_results() -> None:
             print('%-10s\t%i\t%i' % (t, len(results[f]['taxon'][t]), N))
             n = results[f]['N'][t]
 
-        print("""\nNumber of pairwise comparisons is for pairs that differ \
-at each level excluding comparisons that differ at upper levels""")
-        print("\n")
-
-        print("Average taxonomic distinctness      = %.4f" %
-              results[f]['atd'])
-        print("Variation in taxonomic distinctness = %.4f" %
-              results[f]['vtd'])
-        print("Minimum taxonomic distinctness      = %.4f" %
-              results[f]['euler']['TDmin'])
-        print("Maximum taxonomic distinctness      = %.4f" %
-              results[f]['euler']['TDmax'])
-        print("von Euler's index of imbalance      = %.4f" %
-              results[f]['euler']['EI'])
+        print("\nAverage taxonomic distinctness      = %.4f" % results[f]['atd'])
+        print("Variation in taxonomic distinctness = %.4f" % results[f]['vtd'])
+        print("Minimum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmin'])
+        print("Maximum taxonomic distinctness      = %.4f" % results[f]['euler']['TDmax'])
+        print("von Euler's index of imbalance      = %.4f" % results[f]['euler']['EI'])
         print('\n')
-
-
-print_results()
-print("---------------------------------------------------")
-
-sys.stdout = save_out
-sys.stdout = sys.__stdout__
-
-if ci == 'y':
-    output = out.split('_')[0] + '_funnel.out'
-    o = open(output, 'a')
-
-    save_out = sys.stdout
-    sys.stdout = open(output, 'w')
-    print("""Confidence limits for average taxonomic distinctness
-          and variation in taxonomic distinctness
-          limits are lower 95% limit for AvTD and upper 95% limit for VarTD""")
-    print("Number of permutations for confidence limits =", p, '\n')
-
-    ci_array = []
-    x = []
-    c_array = []
-
-    def funnel(p: int, d1: int, d2: int) -> None:
-        """Calculates confidence intervals for taxonomic distinctness."""
-        pop = population.keys()
-
-        dims = []
-
-        print("""dimension AvTD05% AvTDmean
-              AvTD95% AvTDup VarTDlow VarTD05% VarTDmean VarTD95%""")
-        for d in range(d1, d2 + 1):
-            x.append(d)
-            av_td_ci = []
-            var_td_ci = []
-            for j in range(p):
-                rsamp = sample(pop, d)
-
-                atd, taxon_n, taxon = atd_mean(population, rsamp)
-                av_td_ci.append(atd)
-                v_td = atd_variance(taxon_n, rsamp, atd)
-                var_td_ci.append(v_td)
-
-            av_td_ci.sort()
-            var_td_ci.sort()
-
-            av_td = av_td_ci[int(.05 * p)], sum(av_td_ci) / p,
-            av_td_ci[int(.95 * p)], max(av_td_ci)
-            var_td = min(var_td_ci), var_td_ci[int(.05 * p)],
-            sum(var_td_ci) / p, var_td_ci[int(.95 * p)]
-
-            dims.append(d)
-            ci_array.append(av_td[0])
-            c_array.append(av_td[1])
-            print("%i %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f" %
-                  (d, av_td[0], av_td[1], av_td[2],
-                   av_td[3], var_td[0], var_td[1], var_td[2], var_td[3]))
-
-    funnel(p, d1, d2)
-
-    sys.stdout = save_out
-    sys.stdout = sys.__stdout__
