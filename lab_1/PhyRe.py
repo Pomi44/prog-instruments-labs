@@ -3,6 +3,7 @@ from optparse import OptionParser
 from re import match
 from random import sample
 
+
 def initialize_parameters():
     """Initializing parameters from the command line."""
     parser = OptionParser()
@@ -32,6 +33,7 @@ def initialize_parameters():
     missing = options.m if options.m else 'n'
 
     return sample_file, pop_file, p, d1, d2, ci, batch, path_lengths, missing, out
+
 
 def read_population_file(pop_file, sample, missing, batch, sample_file):
     """Reading the population file and returning the data."""
@@ -113,6 +115,7 @@ def read_population_file(pop_file, sample, missing, batch, sample_file):
 
     return population, taxon, coef, path_lengths_dict
 
+
 def read_sample_file(sample_file):
     """Reading the selection file and returning the data."""
     sample = {}
@@ -123,6 +126,7 @@ def read_sample_file(sample_file):
         species = x[0]
         sample[species] = {}
     return sample
+
 
 def path_length(population):
     """Calculation of the path length."""
@@ -167,6 +171,7 @@ def path_length(population):
 
     return coef, taxon_n, path_lengths
 
+
 def atd_mean(data: dict, sample: list) -> tuple:
     """Calculates the average taxonomic distinctness."""
     N = len(sample)
@@ -190,6 +195,7 @@ def atd_mean(data: dict, sample: list) -> tuple:
     av_td /= (N * (N - 1))
     return av_td, taxon_n, taxon
 
+
 def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
     """Calculates the variance of taxonomic distinctness."""
     v_td = 0
@@ -206,6 +212,7 @@ def atd_variance(taxon_n: dict, sample: list, atd: float) -> float:
     v_td = (v_td - ((atd * n) ** 2) / n) / n
 
     return v_td
+
 
 def euler(data: dict, atd: float, taxon_n: dict) -> dict:
     """Calculates Euler index for the data."""
@@ -262,6 +269,7 @@ def euler(data: dict, atd: float, taxon_n: dict) -> dict:
 
     e_results = {'EI': ei, 'TDmin': td_min, 'TDmax': td_max}
     return e_results
+
 
 def print_results(results, pop_n, path_lengths_dict) -> None:
     """Prints the analysis results to the screen."""
