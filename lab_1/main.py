@@ -21,3 +21,45 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 """
+
+
+from optparse import OptionParser
+from PhyRe import (
+    initialize_parameters,
+    read_population_file,
+    read_sample_file,
+    path_length,
+    atd_mean,
+    atd_variance,
+    euler,
+    print_results
+)
+
+
+def main():
+    sample_file, pop_file, p, d1, d2, ci, batch, path_lengths, missing, out = initialize_parameters()
+
+    population = {}
+    population, taxon, coef, path_lengths_dict = read_population_file(pop_file)
+    sample_data = read_sample_file(sample_file)
+
+    if path_lengths == 'n':
+        coef, pop_n, path_lengths = path_length(population)
+
+    atd, taxon_n, taxon = atd_mean(sample_data, sample_data.keys())
+    v_td = atd_variance(taxon_n, sample_data.keys(), atd)
+    e_results = euler(sample_data, atd, taxon_n)
+
+    results = {
+        'atd': atd,
+        'vtd': v_td,
+        'euler': e_results,
+        'N': taxon_n,
+        'n': len(sample_data),
+        'taxon': taxon
+    }
+
+    print_results(results, pop_n, path_lengths_dict)
+
+if __name__ == "__main__":
+    main()

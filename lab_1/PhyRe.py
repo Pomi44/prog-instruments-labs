@@ -18,6 +18,11 @@ def initialize_parameters():
     d2 = int(sys.argv[1])
     del sys.argv[1]
 
+    sample_file = sys.argv[1]
+    del sys.argv[1]
+    pop_file = sys.argv[1]
+    del sys.argv[1]
+
     (options, args) = parser.parse_args()
     out = options.o if options.o else sample_file.split('.')[0]
     p = options.p if options.p else 1000
